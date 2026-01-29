@@ -39,3 +39,6 @@ jobs:
 
       - name: List Store Groups
         run: mage-remote-run store group list --format json
+
+      - name: Generic REST Call
+        run: mage-remote-run rest -m GET /V1/store/websites
