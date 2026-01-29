@@ -1,0 +1,49 @@
+name: Mage Remote Run Demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install mage-remote-run
+        run: npm install -g mage-remote-run
+
+      - name: Configure Connection
+        # In a real scenario, use GitHub Secrets for all sensitive values
+        env:
+          MAGE_URL: ${{ secrets.MAGE_URL || 'https://example.com' }}
+          MAGE_CONSUMER_KEY: ${{ secrets.MAGE_CONSUMER_KEY || 'ck' }}
+          MAGE_CONSUMER_SECRET: ${{ secrets.MAGE_CONSUMER_SECRET || 'cs' }}
+          MAGE_ACCESS_TOKEN: ${{ secrets.MAGE_ACCESS_TOKEN || 'at' }}
+          MAGE_ACCESS_TOKEN_SECRET: ${{ secrets.MAGE_ACCESS_TOKEN_SECRET || 'ts' }}
+        run: |
+          mage-remote-run connection add \
+            --name "MyOAuth" \
+            --type "ac-on-prem" \
+            --url "$MAGE_URL" \
+            --consumer-key "$MAGE_CONSUMER_KEY" \
+            --consumer-secret "$MAGE_CONSUMER_SECRET" \
+            --access-token "$MAGE_ACCESS_TOKEN" \
+            --token-secret "$MAGE_ACCESS_TOKEN_SECRET" \
+            --active \
+            --no-test
+
+      - name: Test Connection
+        # This step will fail if the credentials above are invalid
+        # We continue on error just to show the workflow completing for demo purposes
+        continue-on-error: true
+        run: mage-remote-run connection test
