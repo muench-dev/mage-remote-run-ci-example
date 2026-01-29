@@ -1,16 +1,16 @@
 name: Mage Remote Run Demo
 
 on:
-  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  demo:
+  demo-integration:
     runs-on: ubuntu-latest
-    
+    name: Demo Integration
     steps:
       - uses: actions/checkout@v4
 
@@ -19,31 +19,23 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install mage-remote-run
-        run: npm install -g mage-remote-run
+      - name: Configure Mage Remote Run
+        uses: muench-dev/mage-remote-run-action@main
+        with:
+          profile-name: "PaaS-Instance"
+          type: "ac-cloud-paas"
+          url: ${{ secrets.MAGE_URL }}
+          consumer-key: ${{ secrets.MAGE_CONSUMER_KEY }}
+          consumer-secret: ${{ secrets.MAGE_CONSUMER_SECRET }}
+          access-token: ${{ secrets.MAGE_ACCESS_TOKEN }}
+          token-secret: ${{ secrets.MAGE_ACCESS_TOKEN_SECRET }}
+          # Implicitly runs connection test unless no-test is true
 
-      - name: Configure Connection
-        # In a real scenario, use GitHub Secrets for all sensitive values
-        env:
-          MAGE_URL: ${{ secrets.MAGE_URL || 'https://example.com' }}
-          MAGE_CONSUMER_KEY: ${{ secrets.MAGE_CONSUMER_KEY || 'ck' }}
-          MAGE_CONSUMER_SECRET: ${{ secrets.MAGE_CONSUMER_SECRET || 'cs' }}
-          MAGE_ACCESS_TOKEN: ${{ secrets.MAGE_ACCESS_TOKEN || 'at' }}
-          MAGE_ACCESS_TOKEN_SECRET: ${{ secrets.MAGE_ACCESS_TOKEN_SECRET || 'ts' }}
-        run: |
-          mage-remote-run connection add \
-            --name "MyOAuth" \
-            --type "ac-on-prem" \
-            --url "$MAGE_URL" \
-            --consumer-key "$MAGE_CONSUMER_KEY" \
-            --consumer-secret "$MAGE_CONSUMER_SECRET" \
-            --access-token "$MAGE_ACCESS_TOKEN" \
-            --token-secret "$MAGE_ACCESS_TOKEN_SECRET" \
-            --active \
-            --no-test
+      - name: Verify Connection Status
+        run: mage-remote-run connection status
 
-      - name: Test Connection
-        # This step will fail if the credentials above are invalid
-        # We continue on error just to show the workflow completing for demo purposes
-        continue-on-error: true
-        run: mage-remote-run connection test
+      - name: List Websites
+        run: mage-remote-run website list --format json
+
+      - name: List Store Groups
+        run: mage-remote-run store group list --format json
